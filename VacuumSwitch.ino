@@ -2,22 +2,23 @@
 
 // relay pins
 
-#define numButton 2
+#define numButton 3
 #define numRels 4
 #define WAITINTERVAL 250
 
 const int Rels[numRels] = {4, 7, 8, 12};
-const int buttonPin[numButton] = {3, 2};
+const int buttonPin[numButton] = {3, 2, 5};
 
-bool buttonState[numButton] = {LOW, LOW};
-bool lastButtonState[numButton] = {LOW, LOW};
+bool buttonState[numButton];
+bool lastButtonState[numButton];
 
-int valveState = 0;
+bool valveState = LOW;
 
 void setup() {
-  // relay pins
+  // Start serial communication for debugging (optional)
   Serial.begin(9600);
 
+  // Relay pins
   for (int j = 0; j < numRels; j++) {
     pinMode(Rels[j], OUTPUT);
     digitalWrite(Rels[j], HIGH);
@@ -27,57 +28,65 @@ void setup() {
   }
   delay(WAITINTERVAL);
   // tactile
-  for (int i = 0; i < numButton; i++)
+  for (int i = 0; i < numButton; i++) {
     pinMode(buttonPin[i], INPUT);
-
-  // Start serial communication for debugging (optional)
+    buttonState[i] = LOW;
+    lastButtonState[i] = LOW;
+  }
   //Serial.begin(9600);
 }
 
 void loop() {
   for (int i = 0; i < numButton; i++) {
     // Read the state of the button
+    lastButtonState[i] = buttonState[i];
     buttonState[i] = digitalRead(buttonPin[i]);
-
-    // Check for a single press (button pressed and then released)
-    if (buttonState[i] != lastButtonState[i]) {
-      // If the button is pressed
-      if (buttonState[i] == HIGH) {
-        // Run the function when button is pressed
-        switchValveState(i);
-      }
-      // Update last button state
-      lastButtonState[i] = buttonState[i];
-    }
   }
+  if ((buttonState[0] == LOW) && (lastButtonState[0] == HIGH)) {
+    Serial.print("valveState");
+    Serial.print(" = ");
+    Serial.println(valveState);
+    valveState = !(valveState);
+    setValveState();
+    Serial.print("valveState");
+    Serial.print(" = ");
+    Serial.println(valveState);
 
+  }
+  if ((buttonState[1] == LOW) && (lastButtonState[1] == LOW)) {
+    openBothValves();
+  }
+  if ((buttonState[1] == HIGH) && (lastButtonState[1] == LOW)) {
+    setValveState();
+  }
+  if ((buttonState[2] == LOW) && (lastButtonState[2] == LOW)) {
+    closeBothValves();
+  }
+  if ((buttonState[2] == HIGH) && (lastButtonState[2] == LOW)) {
+    setValveState();
+  }
+  delay(10);
 }
 
-void switchValveState(int bot) {
-  switch (bot) {
-    case 0:
-      if (valveState == LOW) {
-        digitalWrite(Rels[0], HIGH);
-        delay(WAITINTERVAL);
-        digitalWrite(Rels[1], HIGH);
-        valveState = HIGH;
-      } else {
-        digitalWrite(Rels[1], LOW);
-        delay(WAITINTERVAL);
-        digitalWrite(Rels[0], LOW);
-        valveState = LOW;
-      }
-      break;
-    case 1:
-      if (valveState == LOW) {
-        digitalWrite(Rels[0], HIGH);
-        digitalWrite(Rels[1], LOW);
-        valveState = HIGH;
-      } else {
-        digitalWrite(Rels[0], LOW);
-        digitalWrite(Rels[1], HIGH);
-        valveState = LOW;
-      }
-      break;
+
+void setValveState() {
+  if (valveState == LOW) {
+    digitalWrite(Rels[0], HIGH);
+    delay(WAITINTERVAL);
+    digitalWrite(Rels[1], HIGH);
+  } else {
+    digitalWrite(Rels[1], LOW);
+    delay(WAITINTERVAL);
+    digitalWrite(Rels[0], LOW);
   }
+}
+
+void openBothValves() {
+  digitalWrite(Rels[0], HIGH);
+  digitalWrite(Rels[1], LOW);
+}
+
+void closeBothValves() {
+  digitalWrite(Rels[0], LOW);
+  digitalWrite(Rels[1], HIGH);
 }
