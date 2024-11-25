@@ -5,9 +5,11 @@
 #define numButton 3
 #define numRels 4
 #define WAITINTERVAL 250
+#define WAITLONGINTERVAL 1000
+
 
 const int Rels[numRels] = {4, 7, 8, 12};
-const int buttonPin[numButton] = {3, 2, 5};
+const int buttonPin[numButton] = {5, 2, 3}; // {Pedal, Botton 1, Botton 2}
 
 bool buttonState[numButton];
 bool lastButtonState[numButton];
@@ -27,13 +29,15 @@ void setup() {
     digitalWrite(Rels[j], LOW);
   }
   delay(WAITINTERVAL);
+
   // tactile
   for (int i = 0; i < numButton; i++) {
     pinMode(buttonPin[i], INPUT);
-    buttonState[i] = LOW;
-    lastButtonState[i] = LOW;
+    buttonState[i] = HIGH;
+    lastButtonState[i] = HIGH;
   }
-  //Serial.begin(9600);
+  openBothValves();
+
 }
 
 void loop() {
@@ -41,52 +45,64 @@ void loop() {
     // Read the state of the button
     lastButtonState[i] = buttonState[i];
     buttonState[i] = digitalRead(buttonPin[i]);
+    //Serial.print(buttonState[i]);
+    //Serial.print(" ");
   }
-  if ((buttonState[0] == LOW) && (lastButtonState[0] == HIGH)) {
-    Serial.print("valveState");
-    Serial.print(" = ");
-    Serial.println(valveState);
-    valveState = !(valveState);
-    setValveState();
-    Serial.print("valveState");
-    Serial.print(" = ");
-    Serial.println(valveState);
+  //Serial.println();
 
+  // Pedal press
+  if ((buttonState[0] == LOW) && (lastButtonState[0] == HIGH)) {
+    Serial.println("Pedal Press");
+    if (valveState == HIGH) {
+      setCOValveState();
+      delay(WAITLONGINTERVAL);
+    }
+    setOCValveState();
+    valveState = LOW;
   }
-  if ((buttonState[1] == LOW) && (lastButtonState[1] == LOW)) {
-    openBothValves();
+
+  // Pedal Release
+  if ((buttonState[0] == HIGH) && (lastButtonState[0] == LOW)) {
+    Serial.println("Pedal Release");
+    setCOValveState();
   }
-  if ((buttonState[1] == HIGH) && (lastButtonState[1] == LOW)) {
-    setValveState();
-  }
-  if ((buttonState[2] == LOW) && (lastButtonState[2] == LOW)) {
+
+  // Botton 1
+  if ((buttonState[1] == LOW) && (lastButtonState[1] == HIGH)) {
+    Serial.println("Botton 1");
     closeBothValves();
+    valveState = HIGH;
   }
-  if ((buttonState[2] == HIGH) && (lastButtonState[2] == LOW)) {
-    setValveState();
+
+  // Botton 2
+  if ((buttonState[2] == LOW) && (lastButtonState[2] == HIGH)) {
+    Serial.println("Botton 2");
+    openBothValves();
+    valveState = LOW;
   }
   delay(10);
 }
 
 
-void setValveState() {
-  if (valveState == LOW) {
-    digitalWrite(Rels[0], HIGH);
-    delay(WAITINTERVAL);
-    digitalWrite(Rels[1], HIGH);
-  } else {
-    digitalWrite(Rels[1], LOW);
-    delay(WAITINTERVAL);
-    digitalWrite(Rels[0], LOW);
-  }
+void setOCValveState() {
+  digitalWrite(Rels[0], HIGH);
+  delay(WAITINTERVAL);
+  digitalWrite(Rels[1], HIGH);
+}
+
+void setCOValveState() {
+  digitalWrite(Rels[1], LOW);
+  delay(WAITINTERVAL);
+  digitalWrite(Rels[0], LOW);
+
 }
 
 void openBothValves() {
-  digitalWrite(Rels[0], HIGH);
-  digitalWrite(Rels[1], LOW);
+  digitalWrite(Rels[0], LOW);
+  digitalWrite(Rels[1], HIGH);
 }
 
 void closeBothValves() {
-  digitalWrite(Rels[0], LOW);
-  digitalWrite(Rels[1], HIGH);
+  digitalWrite(Rels[0], HIGH);
+  digitalWrite(Rels[1], LOW);
 }
